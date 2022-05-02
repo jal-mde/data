@@ -1,16 +1,18 @@
-from __future__ import print_function
-
+import time
 from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 # $example on$
+from pyspark.sql import SparkSession
 from pyspark.mllib.linalg import Vectors
 from pyspark.mllib.regression import LabeledPoint
+from pyspark.mllib.classification import LogisticRegressionModel
 from pyspark.mllib.clustering import StreamingKMeans
 from pyspark.mllib.clustering import StreamingKMeansModel
 # $example off$
 
 if __name__ == "__main__":
-    sc = SparkContext(appName="StreamingKMeansExample")  # SparkContext
+    sc = SparkContext(appName="StreamingKMeans")  # SparkContext
+    spark = SparkSession(sc)
     ssc = StreamingContext(sc, 1)
 
     # $example on$
@@ -19,13 +21,19 @@ if __name__ == "__main__":
     def parse(lp):
         label = float(lp[lp.find('(') + 1: lp.find(')')])
         vec = Vectors.dense(lp[lp.find('[') + 1: lp.find(']')].split(','))
-
         return LabeledPoint(label, vec)
 
-    trainingData = sc.textFile("train.csv")\
+    def process_stream(record, spark):
+        if not record.isEmpty():
+            df = spark.createDataFrame(record)
+            #df.show()
+            df.write.parquet("predictions.parquet",mode="append")
+
+            
+    trainingData = sc.textFile("data_train.csv")\
         .map(lambda line: Vectors.dense([float(x) for x in line.strip().split(',')]))
 
-    testingData = sc.textFile("test.csv").map(parse)
+    testingData = sc.textFile("data_test.csv").map(parse)
 
     trainingQueue = [trainingData]
     testingQueue = [testingData]
@@ -43,7 +51,10 @@ if __name__ == "__main__":
     result = model.predictOnValues(testingStream.map(lambda lp: (lp.label, lp.features)))
     result.pprint()
 
+
+    result.foreachRDD(lambda rdd: process_stream(rdd, spark))
     ssc.start()
+    #ssc.awaitTermination()
     ssc.stop(stopSparkContext=True, stopGraceFully=True)
     # $example off$
 
