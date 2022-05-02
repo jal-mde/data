@@ -23,7 +23,7 @@ if __name__ == "__main__":
         return LabeledPoint(label, vec)
 
     trainingData = sc.textFile("train.csv")\
-        .map(lambda line: Vectors.dense([float(x) for x in line.strip().split(' ')]))
+        .map(lambda line: Vectors.dense([float(x) for x in line.strip().split(',')]))
 
     testingData = sc.textFile("test.csv").map(parse)
 
