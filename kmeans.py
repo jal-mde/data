@@ -34,7 +34,7 @@ if __name__ == "__main__":
     testingStream = ssc.queueStream(testingQueue)
 
     # We create a model with random clusters and specify the number of clusters to find
-    model = StreamingKMeans(k=2, decayFactor=1.0).setRandomCenters(3, 1.0, 0)
+    model = StreamingKMeans(k=2, decayFactor=1.0).setRandomCenters(6, 1.0, 0)
 
     # Now register the streams for training and testing and start the job,
     # printing the predicted cluster assignments on new data points as they arrive.
